@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -46,16 +47,21 @@ public class MyTelegramBot extends TelegramLongPollingBot {
             execute(userServiceImpl.sendLinkToUser(chatId));
         }else if (text!=null && text.startsWith("/start ")){
             String toUsername = text.split(" ")[1];
-            execute(userServiceImpl.sendLinkToUser(chatId));
             execute(userServiceImpl.sendButton(chatId,toUsername));
+            execute(userServiceImpl.sendLinkToUser(chatId));
         }else if (update.hasCallbackQuery()&&update.getCallbackQuery().getData().startsWith("/sendTo ")){
             CallbackQuery callbackQuery = update.getCallbackQuery();
             chatId = callbackQuery.getFrom().getId();
             String toUsername = callbackQuery.getData().split(" ")[1];
-            execute(userServiceImpl.setToUsername(chatId,toUsername));
+            SendMessage method = userServiceImpl.setToUsername(chatId, toUsername);
+            if (method!=null)
+                execute(method);
         }
         else{
-            execute(userServiceImpl.sendAnonymousMessage(chatId,text));
+            if (chatId!=null) {
+                execute(userServiceImpl.sendAnonymousMessage(chatId, text));
+                execute(userServiceImpl.sendLinkToUser(chatId));
+            }
         }
     }
 }

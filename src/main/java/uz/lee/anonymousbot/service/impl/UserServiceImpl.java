@@ -36,11 +36,36 @@ public class UserServiceImpl implements UserService {
             userRepo.save(user);
         }
         System.out.println(chatId);
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.setChatId(chatId + "");
-        sendMessage.enableHtml(true);
-        sendMessage.setText("<b style=\"color:red\">Your link: t.me/anonymous_anonym_bot?start=" + username + "</b>");
+        SendMessage sendMessage = createSendMessage(chatId, username);
+        InlineKeyboardMarkup replyMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> buttons = getInlineKeyboardButtons(username);
+        rows.add(buttons);
+        replyMarkup.setKeyboard(rows);
+        sendMessage.setText("""
+                @anonymous_anonym_bot Bu sizning shaxsiy havolangiz:
+                https://t.me/anonymous_anonym_bot?start=%s
+                                
+                Ulashish orqali anonim suhbat quring!
+                """.formatted(username));
+        sendMessage.setReplyMarkup(replyMarkup);
         return sendMessage;
+    }
+
+    private static List<InlineKeyboardButton> getInlineKeyboardButtons(String username) {
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+        InlineKeyboardButton button = new InlineKeyboardButton();
+        button.setText("Ulashish ♻");
+        button.setSwitchInlineQuery("""
+                
+                ✅ «Anonim savollar» rasmiy boti.
+                                
+                🤓 Men bilan anonim suhbat quring. Sizni kimligingiz qabul qiluvchiga ko'rinmaydi.
+                                
+                Quyidagi havola orqali xabaringizni yo'llang!⤵️
+                https://t.me/anonymous_anonym_bot?start=""" +username);
+        buttons.add(button);
+        return buttons;
     }
 
     @Override
@@ -54,28 +79,27 @@ public class UserServiceImpl implements UserService {
                 if (receiver.isPresent()){
                     user.setToUsername(null);
                     userRepo.save(user);
-                    return createSendMessage(receiver.get().getChatId(), text);
+                    return createSendMessage(receiver.get().getChatId(), """
+                            📨 Sizga yangi anonim xabar bor!
+                            
+                            %s
+                            """.formatted(text));
                 }
-                return createSendMessage(chatId,"Xabaringiz jo'natildi!!!");
             }
         }
-        return sendLinkToUser(chatId);
+        return createSendMessage(chatId,"Xabaringiz jo'natildi!");
     }
 
     @Override
     public SendMessage setToUsername(Long chatId, String toUsername) {
         Optional<User> byChatId = userRepo.findByChatId(chatId);
         if (byChatId.isPresent()) {
-            Optional<User> byUsername = userRepo.findByUsername(toUsername);
-            if (byUsername.isPresent()) {
-                User user = byChatId.get();
-                user.setToUsername(toUsername);
-                userRepo.save(user);
-                return createSendMessage(chatId,"<b>Murojaatingizni shu yerga yozing!</b>");
-            }
-            return createSendMessage(chatId,"<b>Bizda bunday foydalanuvchi mavjud emas !!!</b>");
+            User user = byChatId.get();
+            user.setToUsername(toUsername);
+            userRepo.save(user);
+            return createSendMessage(chatId,"<b>Murojaatingizni shu yerga yozing!</b>");
         }
-        return createSendMessage(chatId,"How you are there ???!");
+        return null;
     }
 
 
@@ -95,7 +119,7 @@ public class UserServiceImpl implements UserService {
         List<InlineKeyboardButton> row = new ArrayList<>();
         InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
 
-        inlineKeyboardButton.setText("->*<-");
+        inlineKeyboardButton.setText("⚪");
         inlineKeyboardButton.setCallbackData("/sendTo %s".formatted(toUsername));
 
         row.add(inlineKeyboardButton);
@@ -104,19 +128,4 @@ public class UserServiceImpl implements UserService {
         msg.setReplyMarkup(inlineKeyboardMarkup);
         return msg;
     }
-
-    /*public SendMessage sendButton(Long chatId, String toUsername) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.setChatId(chatId + "");
-        sendMessage.setText("Press for send anonymous message");
-
-        List<InlineKeyboardButton> buttons = new ArrayList<>();
-        InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
-        inlineKeyboardButton.setText("-> * <-");
-        inlineKeyboardButton.setCallbackData("t.me/anonymous_anonym_bot?start=" + toUsername);
-        buttons.add(inlineKeyboardButton);
-        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(Collections.singletonList(buttons));
-        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
-        return sendMessage;
-    }*/
 }
